@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>TradeBot Command Core</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+
+<style>
+
+/* =============================
+GLOBAL
+============================= */
+
+body{
+    margin:0;
+    font-family:Poppins,sans-serif;
+    background:black;
+    color:white;
+    overflow:hidden;
+}
+
+/* Cosmic Red Aura Pulse */
+
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+
+    animation:auraPulse 8s ease-in-out infinite;
+
+    box-shadow:
+    inset 0 0 180px rgba(255,0,0,.35),
+    inset 0 0 260px rgba(255,0,0,.2);
+}
+
+@keyframes auraPulse{
+    0%,100%{
+        box-shadow:
+        inset 0 0 140px rgba(255,0,0,.3);
+    }
+
+    50%{
+        box-shadow:
+        inset 0 0 220px rgba(255,0,0,.55);
+    }
+}
+
+/* =============================
+PARTICLE SYSTEM (MOUSE + FLOAT)
+============================= */
+
+#particles{
+    position:fixed;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+}
+
+/* Particle style */
+
+.particle{
+    position:absolute;
+    width:4px;
+    height:4px;
+    background:red;
+    border-radius:50%;
+
+    box-shadow:
+    0 0 12px red,
+    0 0 25px red;
+
+    transition:transform .3s linear;
+    animation:particleFloat linear infinite;
+}
+
+@keyframes particleFloat{
+    from{
+        transform:translateY(100vh) scale(1);
+        opacity:1;
+    }
+
+    to{
+        transform:translateY(-20vh) scale(0.2);
+        opacity:0;
+    }
+}
+
+/* =============================
+HERO
+============================= */
+
+.hero{
+    height:100vh;
+
+    position:relative;
+
+    background:
+    linear-gradient(to bottom,
+        rgba(0,0,0,.25),
+        rgba(120,0,0,.75),
+        black
+    ),
+    url("itachi.png");
+
+    background-size:contain;
+    background-repeat:no-repeat;
+    background-position:center top;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+
+    filter:brightness(1.4);
+}
+
+/* Glass panel */
+
+.float{
+    padding:50px;
+    border-radius:28px;
+
+    backdrop-filter:blur(16px);
+    background:rgba(0,0,0,.35);
+
+    box-shadow:
+    0 0 60px rgba(255,0,0,.6),
+    0 0 120px rgba(255,0,0,.3);
+
+    animation:panelFloat 6s ease-in-out infinite;
+}
+
+@keyframes panelFloat{
+    0%,100%{ transform:translateY(0); }
+    50%{ transform:translateY(-22px); }
+}
+
+/* =============================
+DASHBOARD
+============================= */
+
+.dashboard{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+    gap:30px;
+    padding:60px;
+}
+
+.card{
+    background:rgba(20,20,20,.9);
+    padding:32px;
+    border-radius:24px;
+
+    transition:.35s;
+    box-shadow:0 0 25px rgba(255,0,0,.25);
+}
+
+.card:hover{
+    transform:translateY(-10px) scale(1.03);
+    box-shadow:0 0 45px red;
+}
+
+/* =============================
+COMMAND BUTTON (STATE GLOW)
+============================= */
+
+button{
+    padding:18px 40px;
+    border:none;
+    border-radius:14px;
+    cursor:pointer;
+
+    font-weight:600;
+    font-size:16px;
+
+    background:linear-gradient(45deg,#ff0000,#800000);
+    color:white;
+
+    transition:.3s;
+
+    box-shadow:0 0 30px rgba(255,0,0,.5);
+}
+
+button:hover{
+    transform:scale(1.1);
+}
+
+/* Bot State Glow */
+
+button.onState{
+    box-shadow:
+    0 0 20px #00ff88,
+    0 0 40px #00ff88;
+    background:linear-gradient(45deg,#00ff88,#008833);
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="particles"></div>
+
+<section class="hero">
+
+<div class="float">
+
+<h1>TradeBot Command Core</h1>
+<p>Dark Strategy Automation System</p>
+
+<button onclick="toggleBot()" id="toggleBtn">Toggle Bot</button>
+
+</div>
+
+</section>
+
+<section class="dashboard">
+
+<div class="card">
+<h2>Trades Taken</h2>
+<p id="trades">0</p>
+</div>
+
+<div class="card">
+<h2>Total Profit</h2>
+<p id="profit">$0</p>
+</div>
+
+<div class="card">
+<h2>Bot Status</h2>
+<p id="status">Loading...</p>
+</div>
+
+</section>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+    getFirestore,
+    doc,
+    onSnapshot,
+    setDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+/* Firebase */
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBXHO3IQMudC1UXQvqDir3TyledQ6Pch1c",
+    authDomain: "tradebot-control.firebaseapp.com",
+    projectId: "tradebot-control",
+    storageBucket: "tradebot-control.firebasestorage.app",
+    messagingSenderId: "598223160537",
+    appId: "1:598223160:web:b9ce67efa5e8458f046ac8"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const botRef = doc(db,"bot","settings");
+
+/* =============================
+REALTIME LISTENER (NO POLLING)
+============================= */
+
+onSnapshot(botRef,(snap)=>{
+
+    if(!snap.exists()) return;
+
+    const data = snap.data();
+
+    const status = data.status || "OFF";
+
+    document.getElementById("status").innerText = status;
+
+    const btn = document.getElementById("toggleBtn");
+
+    if(status === "ON"){
+        btn.classList.add("onState");
+    }else{
+        btn.classList.remove("onState");
+    }
+});
+
+/* =============================
+TOGGLE BOT
+============================= */
+
+window.toggleBot = async function(){
+
+    const statusText =
+    document.getElementById("status").innerText;
+
+    const newState =
+    statusText === "ON" ? "OFF" : "ON";
+
+    await setDoc(botRef,{
+        status:newState
+    },{merge:true});
+};
+
+/* =============================
+PARTICLE SYSTEM
+============================= */
+
+function createParticles(){
+
+    const container = document.getElementById("particles");
+
+    for(let i=0;i<90;i++){
+
+        let p = document.createElement("div");
+        p.className = "particle";
+
+        p.style.left = Math.random()*100 + "vw";
+        p.style.top = Math.random()*100 + "vh";
+
+        p.style.animationDuration =
+        (3 + Math.random()*6) + "s";
+
+        container.appendChild(p);
+    }
+}
+
+createParticles();
+
+/* Mouse reactive swarm */
+
+document.addEventListener("mousemove",(e)=>{
+
+    document.querySelectorAll(".particle").forEach(p=>{
+
+        let dx = (Math.random()-0.5)*40;
+        let dy = (Math.random()-0.5)*40;
+
+        p.style.transform =
+        `translate(${dx}px,${dy}px)`;
+    });
+
+});
+
+</script>
+
+</body>
+</html>

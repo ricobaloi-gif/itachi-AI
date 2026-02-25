@@ -1,0 +1,43 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: white;
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+}
+
+.container {
+  max-width: 400px;
+  margin: auto;
+}
+
+.card {
+  background: #1e1e1e;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+}
+
+button {
+  padding: 10px 20px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  background: #00c853;
+  color: white;
+  font-size: 16px;
+}
+
+button:hover {
+  opacity: 0.8;
+}
+
+input {
+  padding: 10px;
+  width: 80%;
+  border-radius: 5px;
+  border: none;
+  margin-top: 10px;
+}
