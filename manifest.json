@@ -1,0 +1,16 @@
+{
+  "name": "TradeBot Dashboard",
+  "short_name": "TradeBot",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "black",
+  "theme_color": "red",
+
+  "icons": [
+    {
+      "src": "logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpg"
+    }
+  ]
+}
